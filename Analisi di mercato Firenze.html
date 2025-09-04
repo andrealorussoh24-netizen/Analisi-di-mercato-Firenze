@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Investitore: Mercato Turistico Firenze 2024</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: Ho progettato un'applicazione a pagina singola (SPA) con navigazione a schede (Panoramica, Offerta, Domanda, Calendario, Strategia). Questa struttura è stata scelta perché permette all'investitore di avere una visione d'insieme immediata (Panoramica) e di approfondire aree specifiche in modo non lineare, a seconda dei propri interessi. Questo approccio a dashboard è più intuitivo e funzionale di un report testuale, facilitando il confronto dei dati e la comprensione delle strategie. Le interazioni (hover sui grafici, click sul calendario) sono pensate per rendere l'esplorazione dei dati un processo attivo e coinvolgente. -->
+    <!-- Visualization & Content Choices: 
+        - Panoramica: KPI numerici per impatto immediato. Grafico a linee per la stagionalità (Goal: Change, Viz: Line Chart, Justification: Mostra i trend mensili). Grafico a ciambella per la provenienza (Goal: Compare, Viz: Donut Chart, Justification: Mostra le proporzioni).
+        - Offerta Ricettiva: Grafici a barre per prezzi e occupazione (Goal: Compare, Viz: Bar Chart, Justification: Confronto diretto tra tipologie di immobili). Cards HTML/CSS per SWOT (Goal: Organize, Justification: Leggibilità).
+        - Domanda e Tendenze: Cards con icone per le motivazioni (Goal: Inform, Justification: Visualizzazione rapida). Grafico a torta per i canali di prenotazione (Goal: Inform, Justification: Evidenzia la dominanza delle OTA).
+        - Calendario: Griglia HTML/JS interattiva (Goal: Organize, Viz: Interactive Grid, Justification: Molto più engaging di una lista statica).
+        - Strategia: Cards e liste numerate (Goal: Inform, Justification: Struttura chiara e actionable).
+        - Tutte le visualizzazioni sono realizzate con Chart.js (Canvas) o HTML/CSS, come richiesto. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfcf9;
+            color: #4a4a4a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active {
+            border-bottom-color: #c2410c;
+            color: #c2410c;
+        }
+        .kpi-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .calendar-item {
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .calendar-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-orange-900">Dashboard Investitore</h1>
+            <p class="text-xl mt-2 text-gray-600">Analisi del Mercato Turistico di Firenze — Anno 2024</p>
+        </header>
+
+        <nav class="flex justify-center border-b border-gray-200 mb-8">
+            <div class="flex flex-wrap justify-center -mb-px space-x-4 sm:space-x-8 text-sm sm:text-base">
+                <a href="#" class="nav-link active py-4 px-1 font-medium" data-target="overview">Panoramica</a>
+                <a href="#" class="nav-link py-4 px-1 font-medium" data-target="supply">Offerta Ricettiva</a>
+                <a href="#" class="nav-link py-4 px-1 font-medium" data-target="demand">Domanda & Trend</a>
+                <a href="#" class="nav-link py-4 px-1 font-medium" data-target="calendar">Calendario Opportunità</a>
+                <a href="#" class="nav-link py-4 px-1 font-medium" data-target="strategy">Strategia</a>
+            </div>
+        </nav>
+
+        <main>
+            <section id="overview" class="content-section active">
+                 <p class="text-center text-gray-600 max-w-3xl mx-auto mb-10">
+                    Questa sezione offre una sintesi dei dati chiave del mercato turistico fiorentino per il 2024. I principali indicatori di performance (KPI), la stagionalità e la provenienza dei turisti forniscono un quadro immediato del potenziale della destinazione, evidenziando un mercato robusto e a forte vocazione internazionale.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <div class="kpi-card">
+                        <h3 class="text-gray-500 font-medium">Presenze Stimate 2024</h3>
+                        <p class="text-4xl font-bold text-orange-800 mt-2">15 Milioni</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3 class="text-gray-500 font-medium">Provenienza Internazionale</h3>
+                        <p class="text-4xl font-bold text-orange-800 mt-2">>70%</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3 class="text-gray-500 font-medium">Permanenza Media</h3>
+                        <p class="text-4xl font-bold text-orange-800 mt-2">2,5 notti</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold text-center mb-4 text-orange-900">Stagionalità: Presenze Mensili Stimate</h3>
+                        <div class="chart-container">
+                            <canvas id="seasonalityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold text-center mb-4 text-orange-900">Provenienza Principale dei Turisti</h3>
+                        <div class="chart-container">
+                            <canvas id="originChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="supply" class="content-section">
+                <p class="text-center text-gray-600 max-w-3xl mx-auto mb-10">
+                   Questa sezione analizza il panorama competitivo di Firenze, confrontando l'offerta alberghiera ed extra-alberghiera. Esplora i prezzi medi e i tassi di occupazione stimati per tipologia di immobile per identificare le opportunità di posizionamento sul mercato e le strategie per differenziarsi dai competitor.
+                </p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold text-center mb-4 text-orange-900">Prezzo Medio a Notte (€) per Immobile</h3>
+                        <div class="chart-container h-96">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold text-center mb-4 text-orange-900">Tasso di Occupazione Stimato (%)</h3>
+                        <div class="chart-container h-96">
+                            <canvas id="occupancyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                     <h3 class="text-2xl font-semibold text-center mb-6 text-orange-900">Analisi Competitor</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+                           <h4 class="text-lg font-bold text-green-700 mb-2">Punti di Forza</h4>
+                           <ul class="list-disc list-inside space-y-2 text-gray-700">
+                               <li>Ampia e diversificata offerta che copre tutte le fasce di prezzo.</li>
+                               <li>Posizioni strategiche nel cuore del centro storico.</li>
+                               <li>Flessibilità e offerta di esperienze "locali" autentiche.</li>
+                           </ul>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-red-500">
+                           <h4 class="text-lg font-bold text-red-700 mb-2">Punti di Debolezza</h4>
+                           <ul class="list-disc list-inside space-y-2 text-gray-700">
+                               <li>Offerta spesso standardizzata e impersonale.</li>
+                               <li>Qualità del servizio incostante a causa di gestioni amatoriali.</li>
+                               <li>Impatto dell'"overtourism" con criticità legate a rumore e affollamento.</li>
+                           </ul>
+                        </div>
+                     </div>
+                </div>
+            </section>
+
+            <section id="demand" class="content-section">
+                 <p class="text-center text-gray-600 max-w-3xl mx-auto mb-10">
+                    Questa sezione esplora le motivazioni e i comportamenti dei turisti a Firenze. Capire perché i visitatori scelgono la città, come prenotano e quali sono le tendenze emergenti è fondamentale per definire un'offerta immobiliare mirata, capace di intercettare i bisogni del mercato e di massimizzare la redditività.
+                </p>
+                <div class="bg-white p-6 rounded-lg shadow mb-8">
+                    <h3 class="text-2xl font-semibold text-center mb-6 text-orange-900">Motivazioni Principali dei Turisti</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                        <div>
+                            <span class="text-4xl">🏛️</span>
+                            <p class="mt-2 font-medium">Cultura & Arte</p>
+                        </div>
+                        <div>
+                            <span class="text-4xl">🍷</span>
+                            <p class="mt-2 font-medium">Enogastronomia</p>
+                        </div>
+                        <div>
+                            <span class="text-4xl">🛍️</span>
+                            <p class="mt-2 font-medium">Shopping</p>
+                        </div>
+                        <div>
+                            <span class="text-4xl">🎉</span>
+                            <p class="mt-2 font-medium">Eventi & Fiere</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                         <h3 class="text-xl font-semibold text-center mb-4 text-orange-900">Canali di Prenotazione più Utilizzati</h3>
+                         <div class="chart-container">
+                            <canvas id="channelsChart"></canvas>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold text-center mb-4 text-orange-900">Trend Emergenti</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <span class="text-2xl mr-3">✨</span>
+                                <div>
+                                    <h4 class="font-bold">Turismo Esperienziale</h4>
+                                    <p class="text-gray-600 text-sm">Ricerca di attività autentiche come corsi di cucina e tour artigianali.</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-2xl mr-3">💼</span>
+                                <div>
+                                    <h4 class="font-bold">Soggiorni "Bleisure"</h4>
+                                    <p class="text-gray-600 text-sm">Unione di viaggi di lavoro e piacere, con richiesta di spazi per lo smart working.</p>
+                                </div>
+                            </li>
+                             <li class="flex items-start">
+                                <span class="text-2xl mr-3">🌏</span>
+                                <div>
+                                    <h4 class="font-bold">Crescita Internazionale</h4>
+                                    <p class="text-gray-600 text-sm">Consolidamento dei mercati USA e crescita da Asia e America Latina.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="calendar" class="content-section">
+                <p class="text-center text-gray-600 max-w-3xl mx-auto mb-10">
+                    Il calendario delle opportunità per il 2025 evidenzia i periodi di picco della domanda turistica a Firenze. Conoscere e anticipare questi eventi è cruciale per una strategia di prezzo dinamica, permettendo di massimizzare le tariffe e il tasso di occupazione durante tutto l'anno. Clicca su un evento per maggiori dettagli.
+                </p>
+                <div id="calendarGrid" class="calendar-grid">
+                </div>
+                <div id="calendarModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full relative">
+                        <button id="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                        <h3 id="modalTitle" class="text-xl font-bold text-orange-900 mb-2"></h3>
+                        <p id="modalDescription" class="text-gray-700"></p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="strategy" class="content-section">
+                 <p class="text-center text-gray-600 max-w-3xl mx-auto mb-10">
+                    Questa sezione finale traduce l'analisi di mercato in una chiara strategia di investimento e in un piano d'azione pratico. Vengono identificati il target più profittevole, la tipologia di immobile ideale e i fattori differenzianti per emergere in un mercato competitivo, offrendo una roadmap per massimizzare la redditività.
+                </p>
+                <h3 class="text-2xl font-semibold text-center mb-6 text-orange-900">Analisi Strategica per l'Investitore</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                     <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-lg mb-2">🎯 Target Profittevole</h4>
+                        <p>Coppie internazionali (30-50 anni) e famiglie USA con alta capacità di spesa, interessate a esperienze culturali ed enogastronomiche di qualità.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-lg mb-2">🏠 Immobile Ideale</h4>
+                        <p>Bilocale di charme con un elemento "wow" (terrazza, vista) o Trilocale ristrutturato con doppi servizi, in zone centrali ma non sature (es. Oltrarno, Sant'Ambrogio).</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-lg mb-2">⭐ Punti Differenzianti</h4>
+                        <p>Design unico, offerta di servizi esperienziali (es. corsi di cucina), tecnologia (self check-in, Wi-Fi veloce) e comunicazione impeccabile.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-lg shadow max-w-4xl mx-auto">
+                    <h3 class="text-2xl font-semibold text-center mb-6 text-orange-900">Piano d'Azione: 3 Mosse Chiave</h3>
+                    <ol class="space-y-6">
+                        <li class="flex">
+                            <div class="flex-shrink-0 bg-orange-700 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">1</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-lg">Focalizzazione sul Prodotto</h4>
+                                <p class="text-gray-600">Identifica e acquisisci (o prendi in gestione "vuoto per pieno") un immobile con un forte potenziale differenziante. Concentrati sulla qualità, non sulla quantità.</p>
+                            </div>
+                        </li>
+                         <li class="flex">
+                            <div class="flex-shrink-0 bg-orange-700 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">2</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-lg">Crea un Brand Memorabile</h4>
+                                <p class="text-gray-600">Investi in home staging e fotografia professionale. Costruisci un'identità visiva e un'offerta di benvenuto che rendano l'esperienza unica e recensibile positivamente.</p>
+                            </div>
+                        </li>
+                         <li class="flex">
+                            <div class="flex-shrink-0 bg-orange-700 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">3</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-lg">Ottimizza la Gestione Online</h4>
+                                <p class="text-gray-600">Utilizza un channel manager per sincronizzare le OTA e adotta una strategia di prezzi dinamica. Punta a ottenere recensioni a 5 stelle fin da subito per costruire una solida reputazione online.</p>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('data-target');
+
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+
+                    contentSections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
+                    });
+                });
+            });
+            
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#4a4a4a';
+            
+            function createChart(ctx, type, data, options) {
+                if (ctx) {
+                    new Chart(ctx, { type, data, options });
+                }
+            }
+
+            const seasonalityData = {
+                labels: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'],
+                datasets: [{
+                    label: 'Presenze Stimate',
+                    data: [6, 7, 10, 13, 14, 15, 14, 13, 14, 12, 8, 7],
+                    borderColor: '#c2410c',
+                    backgroundColor: 'rgba(194, 65, 12, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            };
+            createChart(document.getElementById('seasonalityChart'), 'line', seasonalityData, {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { callback: value => value + 'M' } } }
+            });
+
+            const originData = {
+                labels: ['USA', 'Germania', 'UK', 'Francia', 'Italia', 'Altri'],
+                datasets: [{
+                    data: [20, 12, 10, 8, 25, 25],
+                    backgroundColor: ['#7c2d12', '#9a3412', '#c2410c', '#ea580c', '#f97316', '#fb923c'],
+                    borderWidth: 0,
+                }]
+            };
+            createChart(document.getElementById('originChart'), 'doughnut', originData, {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            });
+            
+            const priceData = {
+                labels: ['Bilocale', 'Trilocale', 'Quadrilocale', 'Villa'],
+                datasets: [{
+                    label: 'Prezzo Medio Notte (€)',
+                    data: [200, 275, 365, 600],
+                    backgroundColor: ['#fed7aa', '#fb923c', '#f97316', '#ea580c'],
+                    borderRadius: 4
+                }]
+            };
+            createChart(document.getElementById('priceChart'), 'bar', priceData, {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true } }
+            });
+
+            const occupancyData = {
+                labels: ['Bilocale', 'Trilocale', 'Quadrilocale', 'Villa'],
+                datasets: [{
+                    label: 'Occupazione Media (%)',
+                    data: [78, 72, 68, 63],
+                    backgroundColor: ['#fed7aa', '#fb923c', '#f97316', '#ea580c'],
+                    borderRadius: 4
+                }]
+            };
+             createChart(document.getElementById('occupancyChart'), 'bar', occupancyData, {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, max: 100 } }
+            });
+            
+            const channelsData = {
+                labels: ['OTA (Booking, Airbnb)', 'Diretto/Sito Web', 'Agenzie/TO'],
+                datasets: [{
+                    data: [80, 15, 5],
+                    backgroundColor: ['#c2410c', '#ea580c', '#fb923c'],
+                    borderWidth: 0
+                }]
+            };
+             createChart(document.getElementById('channelsChart'), 'pie', channelsData, {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            });
+
+            const calendarData = [
+                { title: "Pitti Uomo", period: "Gennaio / Giugno", description: "Edizioni invernali ed estive della più importante fiera internazionale di moda maschile. Altissima domanda da parte di buyer, giornalisti e professionisti del settore. Prezzi al picco." },
+                { title: "Pasqua", period: "Marzo / Aprile", description: "Periodo di altissima stagione con forte afflusso di turisti nazionali e internazionali. Ideale per famiglie e coppie." },
+                { title: "Ponti Primaverili", period: "25 Aprile / 1 Maggio", description: "Grande afflusso di turismo domestico ed europeo. Weekend lunghi con tassi di occupazione molto elevati." },
+                { title: "Maggio Musicale", period: "Maggio - Giugno", description: "Prestigioso festival di opera e musica classica che attira un pubblico internazionale colto e con alta capacità di spesa." },
+                { title: "Firenze Rocks", period: "Giugno", description: "Grande festival rock che attira migliaia di giovani e turisti internazionali, riempiendo la città per diversi giorni." },
+                { title: "Estate Fiorentina", period: "Luglio - Agosto", description: "Mesi caldi con turismo prevalentemente internazionale. Alta domanda per alloggi con aria condizionata e, se possibile, spazi esterni." },
+                { title: "Florence Biennale", period: "Ottobre", description: "Mostra internazionale di arte contemporanea che attira artisti, collezionisti e appassionati da tutto il mondo." },
+                { title: "Natale & Capodanno", period: "Dicembre", description: "La città si anima di mercatini e eventi. Forte domanda nella settimana tra Natale e Capodanno, con picco di tariffe per l'ultimo dell'anno." },
+            ];
+            
+            const calendarGrid = document.getElementById('calendarGrid');
+            const modal = document.getElementById('calendarModal');
+            const closeModalBtn = document.getElementById('closeModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalDescription = document.getElementById('modalDescription');
+
+            calendarData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'calendar-item bg-white p-4 rounded-lg shadow border-l-4 border-orange-600';
+                card.innerHTML = `<h4 class="font-bold text-lg text-orange-800">${item.title}</h4><p class="text-gray-500">${item.period}</p>`;
+                card.addEventListener('click', () => {
+                    modalTitle.textContent = item.title;
+                    modalDescription.textContent = item.description;
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                });
+                calendarGrid.appendChild(card);
+            });
+            
+            closeModalBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>
